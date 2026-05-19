@@ -1,8 +1,3 @@
-"""
-FastAPI Server for Crypto & Binary Options Signal Bot
-Provides REST API endpoints for technical analysis signals
-"""
-
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -30,7 +25,6 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    """Root endpoint - API health check"""
     return {
         "status": "online",
         "service": "Crypto Signal Bot API",
@@ -44,7 +38,6 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "service": "Crypto Signal Bot API",
@@ -86,10 +79,14 @@ async def get_signal(
         try:
             result = analyzer.analyze_pair(pair, cleaned_timeframe)
         except Exception as exchange_error:
-            raise HTTPException(
-                status_code=503,
-                detail=f"Exchange connection error: Unable to fetch data for {pair}. Please try again later."
-            )
+            return {
+                "signal": "NEUTRAL",
+                "accuracy": "50%",
+                "duration": cleaned_timeframe,
+                "price": 0.0,
+                "pair": pair,
+                "error": "Exchange connection error"
+            }
         
         if result is None:
             raise HTTPException(
@@ -102,10 +99,14 @@ async def get_signal(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        return {
+            "signal": "NEUTRAL",
+            "accuracy": "50%",
+            "duration": timeframe,
+            "price": 0.0,
+            "pair": pair,
+            "error": "Internal server error"
+        }
 
 
 @app.get("/api/live-price")
@@ -164,7 +165,7 @@ async def get_live_price(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Exchange connection error: {str(e)}")
+        return {"pair": pair, "price": 0.0, "score": 0}
 
 @app.get("/api/price")
 async def get_price(
@@ -183,10 +184,11 @@ async def get_price(
         try:
             result = analyzer.analyze_pair(pair, "1m")
         except Exception as exchange_error:
-            raise HTTPException(
-                status_code=503,
-                detail=f"Exchange connection error: Unable to fetch data for {pair}. Please try again later."
-            )
+            return {
+                "pair": pair,
+                "price": 0.0,
+                "error": "Exchange connection error"
+            }
         
         if result is None:
             raise HTTPException(
@@ -202,10 +204,11 @@ async def get_price(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        return {
+            "pair": pair,
+            "price": 0.0,
+            "error": "Internal server error"
+        }
 
 
 @app.get("/api/signal/multi")
@@ -213,19 +216,6 @@ async def get_multi_signals(
     pairs: str = Query(..., description="Comma-separated pairs (e.g., BTC/USDT,ETH/USDT)"),
     timeframe: str = Query("1m", description="Timeframe (1m, 5m, 15m)")
 ):
-    """
-    Get trading signals for multiple pairs at once.
-    
-    Args:
-        pairs: Comma-separated trading pairs (e.g., 'BTC/USDT,ETH/USDT')
-        timeframe: Timeframe for analysis ('1m', '5m', '15m')
-    
-    Returns:
-        JSON response with signals for all requested pairs
-    
-    Example:
-        GET /api/signal/multi?pairs=BTC/USDT,ETH/USDT&timeframe=1m
-    """
     try:
         valid_timeframes = ['1m', '5m', '15m', '1h', '4h', '1d']
         if timeframe not in valid_timeframes:
@@ -268,10 +258,12 @@ async def get_multi_signals(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        return {
+            'timeframe': timeframe,
+            'signals': [],
+            'count': 0,
+            'error': 'Internal server error'
+        }
 
 
 if __name__ == "__main__":

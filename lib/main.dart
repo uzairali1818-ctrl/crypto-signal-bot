@@ -91,7 +91,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           liveScore = data['score'] ?? 0;
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      print('Error fetching live price: $e');
+    }
   }
 
   Future<void> triggerBotAnalysis() async {
@@ -165,6 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         showError();
       }
     } catch (e) {
+      print("Network Error: $e");
       _progressTimer?.cancel();
       setState(() {
         showAnalyzingOverlay = false;
