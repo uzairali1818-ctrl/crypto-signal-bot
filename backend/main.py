@@ -278,7 +278,7 @@ if __name__ == "__main__":
     import uvicorn
     
     print("Starting Crypto Signal Bot API Server...")
-    print("API Documentation: http://localhost:8000/docs")
+    print("API Documentation: https://crypto-signal-bot-production-d7e7.up.railway.app/docs")
     
     uvicorn.run(
         "main:app",

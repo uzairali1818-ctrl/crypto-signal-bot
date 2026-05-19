@@ -79,7 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _fetchCurrentPrice() async {
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/api/live-price?pair=$pair');
+      final url = Uri.parse(
+        'https://crypto-signal-bot-production-d7e7.up.railway.app/api/live-price?pair=$pair',
+      );
       final response = await http.get(url).timeout(const Duration(seconds: 2));
 
       if (response.statusCode == 200) {
@@ -122,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     try {
       final url = Uri.parse(
-        'http://10.0.2.2:8000/api/signal?pair=$pair&timeframe=$selectedExpiry',
+        'https://crypto-signal-bot-production-d7e7.up.railway.app/api/signal?pair=$pair&timeframe=$selectedExpiry',
       );
       final response = await http.get(url).timeout(const Duration(seconds: 5));
 
