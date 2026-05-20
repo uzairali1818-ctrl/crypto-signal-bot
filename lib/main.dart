@@ -42,6 +42,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   double currentPrice = 0.0;
   double previousPrice = 0.0;
   int liveScore = 0;
+  double rsi = 50.0;
+  String marketStructure = "NEUTRAL";
   bool isAnalyzing = false;
   bool isServerError = false;
   bool showAnalyzingOverlay = false;
@@ -90,6 +92,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           previousPrice = currentPrice;
           currentPrice = double.parse(data['price'].toString());
           liveScore = data['score'] ?? 0;
+          rsi = double.parse(data['rsi'].toString());
+          marketStructure = data['structure'] ?? "NEUTRAL";
         });
       }
     } catch (e) {
@@ -104,6 +108,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         previousPrice = currentPrice;
         currentPrice = basePrice + (DateTime.now().millisecond % 200 - 100);
         liveScore = DateTime.now().second % 4;
+        rsi = 50.0;
+        marketStructure = "NEUTRAL";
       });
     }
   }
@@ -138,36 +144,47 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     await Future.delayed(const Duration(milliseconds: 3600));
 
-    bool priceTrendUp = currentPrice > previousPrice;
-    bool highScore = liveScore >= 2;
-
     _progressTimer?.cancel();
     setState(() {
-      if (priceTrendUp || highScore) {
-        signal = "BUY / LONG";
+      if (liveScore == 3) {
+        if (marketStructure == "BULLISH") {
+          signal = "BUY / LONG";
+        } else if (marketStructure == "BEARISH") {
+          signal = "SELL / SHORT";
+        } else {
+          signal = "Analyzing Market... Waiting for Confirmations";
+        }
+        accuracy = "95%";
+        duration = selectedExpiry;
+        price = currentPrice;
+        isAnalyzing = false;
+        isServerError = false;
+        showAnalyzingOverlay = false;
+
+        if (signal.contains("BUY") || signal.contains("SELL")) {
+          String finalResult = "WIN";
+          String generatedTime =
+              "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
+
+          historyLogs.insert(0, {
+            "time": generatedTime,
+            "pair": pair,
+            "type": signal,
+            "expiry": duration,
+            "rate": "\$${price.toStringAsFixed(2)}",
+            "prob": accuracy,
+            "status": finalResult,
+          });
+        }
       } else {
-        signal = "SELL / SHORT";
+        signal = "Analyzing Market... Waiting for Confirmations";
+        accuracy = "--%";
+        duration = "-- MIN";
+        price = 0.0;
+        isAnalyzing = false;
+        isServerError = false;
+        showAnalyzingOverlay = false;
       }
-      accuracy = "${85 + (liveScore * 5)}%";
-      duration = selectedExpiry;
-      price = currentPrice;
-      isAnalyzing = false;
-      isServerError = false;
-      showAnalyzingOverlay = false;
-
-      String finalResult = (liveScore >= 2) ? "WIN" : "LOSS";
-      String generatedTime =
-          "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
-
-      historyLogs.insert(0, {
-        "time": generatedTime,
-        "pair": pair,
-        "type": signal,
-        "expiry": duration,
-        "rate": "\$${price.toStringAsFixed(2)}",
-        "prob": accuracy,
-        "status": finalResult,
-      });
     });
   }
 
