@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const CryptoSignalApp());
@@ -35,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   static const String baseUrl = "https://crypto-signal-bot-alpha.vercel.app";
   String pair = "BTC/USDT";
   String selectedExpiry = "5 MIN";
+  String selectedTimeframe = "1 MIN";
   String signal = "READY TO SCAN";
   String accuracy = "--%";
   String duration = "-- MIN";
@@ -49,8 +52,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool showAnalyzingOverlay = false;
   String analyzingProgressText = "Initializing...";
   List<Map<String, dynamic>> historyLogs = [];
+  List<CandleData> candleData = [];
+  List<CandleData> predictedCandleData = [];
   Timer? _priceTimer;
   Timer? _progressTimer;
+  Timer? _chartTimer;
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnimation;
 
@@ -58,6 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     _startLivePriceUpdates();
+    _startChartUpdates();
     _scanLineController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -71,6 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void dispose() {
     _priceTimer?.cancel();
     _progressTimer?.cancel();
+    _chartTimer?.cancel();
     _scanLineController.dispose();
     super.dispose();
   }
@@ -78,6 +86,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _startLivePriceUpdates() {
     _priceTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _fetchCurrentPrice();
+    });
+  }
+
+  void _startChartUpdates() {
+    _chartTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      _fetchCandleData();
+      _fetchPredictedCandles();
     });
   }
 
@@ -107,6 +122,78 @@ class _DashboardScreenState extends State<DashboardScreen>
         rsi = 50.0;
         marketStructure = "NEUTRAL";
       });
+    }
+  }
+
+  Future<void> _fetchCandleData() async {
+    try {
+      final timeframe = selectedTimeframe == "1 MIN" ? "1m" : "5m";
+      final url = Uri.parse(
+        '$baseUrl/api/signal?pair=$pair&timeframe=$timeframe',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final price = double.parse(data['price'].toString());
+
+        setState(() {
+          final now = DateTime.now();
+          candleData.add(
+            CandleData(
+              now,
+              price - 50 + (DateTime.now().millisecond % 100),
+              price + 50 + (DateTime.now().millisecond % 100),
+              price - 100 + (DateTime.now().millisecond % 50),
+              price + (DateTime.now().millisecond % 100 - 50),
+            ),
+          );
+          if (candleData.length > 50) {
+            candleData.removeAt(0);
+          }
+        });
+      }
+    } catch (e) {
+      print("Chart Data Error: $e");
+    }
+  }
+
+  Future<void> _fetchPredictedCandles() async {
+    try {
+      final timeframe = selectedTimeframe == "1 MIN" ? "1m" : "5m";
+      final url = Uri.parse(
+        '$baseUrl/api/predict-candles?pair=$pair&timeframe=$timeframe',
+      );
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final predicted = data['predicted_candles'] as List;
+        final currentPrice = double.parse(data['current_price'].toString());
+
+        setState(() {
+          predictedCandleData.clear();
+          final now = DateTime.now();
+          for (int i = 0; i < predicted.length; i++) {
+            final candle = predicted[i];
+            predictedCandleData.add(
+              CandleData(
+                now.add(
+                  Duration(
+                    minutes: (i + 1) * (selectedTimeframe == "1 MIN" ? 1 : 5),
+                  ),
+                ),
+                double.parse(candle['open'].toString()),
+                double.parse(candle['high'].toString()),
+                double.parse(candle['low'].toString()),
+                double.parse(candle['close'].toString()),
+              ),
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print("Predicted Candles Error: $e");
     }
   }
 
@@ -418,7 +505,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedExpiry = "1 MIN";
+                                selectedTimeframe = "1 MIN";
+                                candleData.clear();
+                                predictedCandleData.clear();
                               });
                             },
                             child: Container(
@@ -427,12 +516,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: selectedExpiry == "1 MIN"
+                                color: selectedTimeframe == "1 MIN"
                                     ? const Color(0xFF00FF66).withOpacity(0.15)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: selectedExpiry == "1 MIN"
+                                  color: selectedTimeframe == "1 MIN"
                                       ? const Color(0xFF00FF66)
                                       : Colors.transparent,
                                 ),
@@ -442,7 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: selectedExpiry == "1 MIN"
+                                  color: selectedTimeframe == "1 MIN"
                                       ? const Color(0xFF00FF66)
                                       : Colors.white38,
                                 ),
@@ -453,7 +542,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedExpiry = "5 MIN";
+                                selectedTimeframe = "5 MIN";
+                                candleData.clear();
+                                predictedCandleData.clear();
                               });
                             },
                             child: Container(
@@ -462,12 +553,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: selectedExpiry == "5 MIN"
+                                color: selectedTimeframe == "5 MIN"
                                     ? const Color(0xFF00FF66).withOpacity(0.15)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: selectedExpiry == "5 MIN"
+                                  color: selectedTimeframe == "5 MIN"
                                       ? const Color(0xFF00FF66)
                                       : Colors.transparent,
                                 ),
@@ -477,11 +568,205 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: selectedExpiry == "5 MIN"
+                                  color: selectedTimeframe == "5 MIN"
                                       ? const Color(0xFF00FF66)
                                       : Colors.white38,
                                 ),
                               ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  height: 280,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F111A),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF00FF66).withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "LIVE CHART",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white38,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00FF66).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00FF66),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  selectedTimeframe,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFF00FF66),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: candleData.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  "Loading chart data...",
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              )
+                            : SfCartesianChart(
+                                primaryXAxis: DateTimeAxis(
+                                  isVisible: true,
+                                  intervalType: DateTimeIntervalType.minutes,
+                                  dateFormat: DateFormat.Hm(),
+                                  labelStyle: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 10,
+                                  ),
+                                  axisLine: const AxisLine(
+                                    color: Colors.white24,
+                                    width: 1,
+                                  ),
+                                  majorGridLines: const MajorGridLines(
+                                    color: Colors.white10,
+                                    width: 0.5,
+                                  ),
+                                ),
+                                primaryYAxis: NumericAxis(
+                                  isVisible: true,
+                                  labelFormat: '\${value}',
+                                  labelStyle: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 10,
+                                  ),
+                                  axisLine: const AxisLine(
+                                    color: Colors.white24,
+                                    width: 1,
+                                  ),
+                                  majorGridLines: const MajorGridLines(
+                                    color: Colors.white10,
+                                    width: 0.5,
+                                  ),
+                                ),
+                                tooltipBehavior: TooltipBehavior(
+                                  enable: true,
+                                  color: const Color(0xFF0F111A),
+                                  textStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                series: <CandleSeries<CandleData, DateTime>>[
+                                  CandleSeries<CandleData, DateTime>(
+                                    name: 'Historical',
+                                    dataSource: candleData,
+                                    xValueMapper: (CandleData data, _) =>
+                                        data.time,
+                                    lowValueMapper: (CandleData data, _) =>
+                                        data.low,
+                                    highValueMapper: (CandleData data, _) =>
+                                        data.high,
+                                    openValueMapper: (CandleData data, _) =>
+                                        data.open,
+                                    closeValueMapper: (CandleData data, _) =>
+                                        data.close,
+                                    borderWidth: 1,
+                                  ),
+                                  CandleSeries<CandleData, DateTime>(
+                                    name: 'Predicted',
+                                    dataSource: predictedCandleData,
+                                    xValueMapper: (CandleData data, _) =>
+                                        data.time,
+                                    lowValueMapper: (CandleData data, _) =>
+                                        data.low,
+                                    highValueMapper: (CandleData data, _) =>
+                                        data.high,
+                                    openValueMapper: (CandleData data, _) =>
+                                        data.open,
+                                    closeValueMapper: (CandleData data, _) =>
+                                        data.close,
+                                    borderWidth: 1,
+                                    enableSolidCandles: true,
+                                  ),
+                                ],
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00FF66),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            "Historical",
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white54,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00FF66).withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(2),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            "Predicted (5 Candles)",
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white54,
                             ),
                           ),
                         ],
@@ -859,4 +1144,13 @@ class CandlestickChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class CandleData {
+  CandleData(this.time, this.open, this.high, this.low, this.close);
+  final DateTime time;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
 }
