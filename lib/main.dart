@@ -32,6 +32,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
+  static const String baseUrl = "https://crypto-signal-bot-alpha.vercel.app";
   String pair = "BTC/USDT";
   String selectedExpiry = "5 MIN";
   String signal = "READY TO SCAN";
@@ -79,9 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _fetchCurrentPrice() async {
     try {
-      final url = Uri.parse(
-        'https://crypto-signal-bot-production-d7e7.up.railway.app/api/live-price?pair=$pair',
-      );
+      final url = Uri.parse('$baseUrl/api/live-price?pair=$pair');
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -136,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     try {
       final url = Uri.parse(
-        'https://crypto-signal-bot-production-d7e7.up.railway.app/api/signal?pair=$pair&timeframe=$selectedExpiry',
+        '$baseUrl/api/signal?pair=$pair&timeframe=$selectedExpiry',
       );
       final response = await http.get(url).timeout(const Duration(seconds: 15));
 

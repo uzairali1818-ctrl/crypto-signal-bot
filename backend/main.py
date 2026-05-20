@@ -5,6 +5,7 @@ import sys
 import os
 import random
 import time
+import ccxt
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -139,25 +140,20 @@ async def get_live_price(
         if '/' not in pair:
             raise HTTPException(status_code=400, detail="Invalid pair format. Use format like 'BTC/USDT'")
         
-        base_price = 65420.50
-        price_variation = random.uniform(-50, 50)
-        mock_price = base_price + price_variation
+        exchange = ccxt.binance()
+        ticker = exchange.fetch_ticker(pair)
+        current_price = ticker['last']
         
         return {
-            "price": round(mock_price, 2),
+            "price": round(current_price, 2),
             "pair": pair,
             "status": "success",
             "score": 2
         }
     except HTTPException:
         raise
-    except Exception:
-        return {
-            "price": 65420.50,
-            "pair": "BTC/USDT",
-            "status": "success",
-            "score": 2
-        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Failed to fetch price: {str(e)}")
 
 @app.get("/api/price")
 async def get_price(
