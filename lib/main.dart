@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() {
   runApp(const CryptoSignalApp());
@@ -57,10 +58,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   Timer? _chartTimer;
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnimation;
+  late FlutterLocalNotificationsPlugin _notificationsPlugin;
+  bool _hasNotifiedForCurrentScore = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
     _startLivePriceUpdates();
     _startChartUpdates();
     _scanLineController = AnimationController(
@@ -69,6 +73,49 @@ class _DashboardScreenState extends State<DashboardScreen>
     )..repeat();
     _scanLineAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
       CurvedAnimation(parent: _scanLineController, curve: Curves.linear),
+    );
+  }
+
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings();
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+        );
+
+    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+    await _notificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _showNotification() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'high_accuracy_signals',
+          'High Accuracy Signals',
+          importance: Importance.max,
+          priority: Priority.high,
+          sound: RawResourceAndroidNotificationSound('notification'),
+        );
+
+    const DarwinNotificationDetails darwinPlatformChannelSpecifics =
+        DarwinNotificationDetails();
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: darwinPlatformChannelSpecifics,
+    );
+
+    await _notificationsPlugin.show(
+      0,
+      '🔥 High Accuracy Signal Alert!',
+      '3/3 Points Matched! Open the app right now to catch the LONG/SHORT trade entry.',
+      platformChannelSpecifics,
     );
   }
 
@@ -101,13 +148,21 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final newScore = data['score'] ?? 0;
         setState(() {
           previousPrice = currentPrice;
           currentPrice = double.parse(data['price'].toString());
-          liveScore = data['score'] ?? 0;
+          liveScore = newScore;
           rsi = double.parse(data['rsi'].toString());
           marketStructure = data['structure'] ?? "NEUTRAL";
         });
+
+        if (newScore == 3 && !_hasNotifiedForCurrentScore) {
+          _showNotification();
+          _hasNotifiedForCurrentScore = true;
+        } else if (newScore != 3) {
+          _hasNotifiedForCurrentScore = false;
+        }
       }
     } catch (e) {
       print("Network Error: $e");
@@ -116,6 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         liveScore = 0;
         rsi = 50.0;
         marketStructure = "NEUTRAL";
+        _hasNotifiedForCurrentScore = false;
       });
     }
   }

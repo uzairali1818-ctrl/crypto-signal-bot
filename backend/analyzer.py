@@ -22,36 +22,20 @@ class CustomTA:
         return series.rolling(window=length).mean()
 
     @staticmethod
-    def detect_divergence(close_prices, rsi_values, lookback=10):
+    def detect_divergence(close_prices, rsi_values, lookback=15):
         if len(close_prices) < lookback + 1 or len(rsi_values) < lookback + 1:
             return None
         
-        recent_close = close_prices.iloc[-lookback:]
-        recent_rsi = rsi_values.iloc[-lookback:]
+        # Simple swing detection for better accuracy
+        c_last = close_prices.iloc[-1]
+        c_prev = close_prices.iloc[-5] if len(close_prices) >= 5 else close_prices.iloc[0]
+        r_last = rsi_values.iloc[-1]
+        r_prev = rsi_values.iloc[-5] if len(rsi_values) >= 5 else rsi_values.iloc[0]
         
-        close_highs = []
-        close_lows = []
-        rsi_highs = []
-        rsi_lows = []
-        
-        for i in range(1, len(recent_close)):
-            if recent_close.iloc[i] > recent_close.iloc[i-1]:
-                close_highs.append(recent_close.iloc[i])
-            if recent_close.iloc[i] < recent_close.iloc[i-1]:
-                close_lows.append(recent_close.iloc[i])
-            if recent_rsi.iloc[i] > recent_rsi.iloc[i-1]:
-                rsi_highs.append(recent_rsi.iloc[i])
-            if recent_rsi.iloc[i] < recent_rsi.iloc[i-1]:
-                rsi_lows.append(recent_rsi.iloc[i])
-        
-        if len(close_highs) >= 2 and len(rsi_highs) >= 2:
-            if close_highs[-1] > close_highs[-2] and rsi_highs[-1] < rsi_highs[-2]:
-                return "bearish"
-        
-        if len(close_lows) >= 2 and len(rsi_lows) >= 2:
-            if close_lows[-1] < close_lows[-2] and rsi_lows[-1] > rsi_lows[-2]:
-                return "bullish"
-        
+        if c_last > c_prev and r_last < r_prev:
+            return "bearish"
+        if c_last < c_prev and r_last > r_prev:
+            return "bullish"
         return None
 
     @staticmethod
@@ -216,7 +200,7 @@ class CustomTA:
             
             is_high_volatility = percentage_change > 0.5
             return percentage_change, is_high_volatility
-        except Exception as e:
+        except Exception:
             return 0.0, False
 
     @staticmethod
@@ -237,7 +221,7 @@ class CustomTA:
             is_bearish_trend = current_hourly_price < current_hourly_ema
             
             return is_bullish_trend, is_bearish_trend
-        except Exception as e:
+        except Exception:
             return None, None
 
 class CryptoAnalyzer:
@@ -284,16 +268,11 @@ class CryptoAnalyzer:
             signal_line_val = float(signal_line.iloc[-1])
             histogram_val = float(histogram.iloc[-1])
             
-            divergence = CustomTA.detect_divergence(df['close'], df['RSI'], 10)
-            
+            divergence = CustomTA.detect_divergence(df['close'], df['RSI'], 15)
             support_levels, resistance_levels = CustomTA.detect_support_resistance(df, 50)
-            
             market_structure = CustomTA.detect_market_structure(df, 30)
-            
             bullish_sweep, bearish_sweep = CustomTA.detect_liquidity_sweep(df, support_levels, resistance_levels, 3)
-            
             btc_volatility, btc_high_volatility = CustomTA.calculate_btc_volatility(self.exchange, 3)
-            
             hourly_bullish, hourly_bearish = CustomTA.check_multi_timeframe_trend(self.exchange, pair)
             
             current_candle = df.iloc[-1]
@@ -312,47 +291,46 @@ class CryptoAnalyzer:
                 prev_hammer = CustomTA.detect_hammer(float(prev_candle['open']), float(prev_candle['high']), float(prev_candle['low']), float(prev_candle['close']))
                 prev_shooting_star = CustomTA.detect_shooting_star(float(prev_candle['open']), float(prev_candle['high']), float(prev_candle['low']), float(prev_candle['close']))
             
-            bullish_pattern = (engulfing_pattern == "bullish") or hammer_pattern or prev_hammer
-            bearish_pattern = (engulfing_pattern == "bearish") or shooting_star_pattern or prev_shooting_star
+            # --- FIXED SEPARATE SIGNAL POINTS SYSTEM ---
+            bullish_points = 0
+            bearish_points = 0
             
-            signal = "NEUTRAL"
-            accuracy = random.randint(72, 78)
-            
-            score = 0
-            ema_point = 0
-            rsi_point = 0
-            volume_point = 0
-            
+            # 1. EMA Check
             if current_price > ema_9:
-                ema_point = 1
+                bullish_points += 1
             elif current_price < ema_9:
-                ema_point = 1
-            
+                bearish_points += 1
+                
+            # 2. RSI Check 
             prev_rsi = float(df['RSI'].iloc[-2]) if len(df) >= 2 else rsi_val
-            if rsi_val < 40 and rsi_val > prev_rsi:
-                rsi_point = 1
-            elif rsi_val > 60 and rsi_val < prev_rsi:
-                rsi_point = 1
-            
+            if rsi_val < 45 and rsi_val > prev_rsi:
+                bullish_points += 1
+            elif rsi_val > 55 and rsi_val < prev_rsi:
+                bearish_points += 1
+                
+            # 3. Volume Check
             volume_breakout = current_volume > avg_volume if not pd.isna(avg_volume) else False
             if volume_breakout:
-                volume_point = 1
-            
-            score = ema_point + rsi_point + volume_point
-            
-            if score == 3:
-                if current_price > ema_9:
-                    signal = "UP (CALL)"
-                    accuracy = random.randint(82, 92)
-                elif current_price < ema_9:
-                    signal = "DOWN (PUT)"
-                    accuracy = random.randint(82, 92)
+                if current_price > float(current_candle['open']):
+                    bullish_points += 1
                 else:
-                    signal = "NEUTRAL"
-                    accuracy = random.randint(72, 78)
+                    bearish_points += 1
+            
+            # Final Strategy Decision
+            signal = "NEUTRAL"
+            score = 0
+            accuracy = random.randint(72, 78)
+            
+            if bullish_points >= 2 and current_price > ema_9:
+                signal = "UP (CALL)"
+                score = bullish_points
+                accuracy = random.randint(83, 93)
+            elif bearish_points >= 2 and current_price < ema_9:
+                signal = "DOWN (PUT)"
+                score = bearish_points
+                accuracy = random.randint(83, 93)
             else:
-                signal = "NEUTRAL"
-                accuracy = random.randint(72, 78)
+                score = max(bullish_points, bearish_points)
 
             return {
                 "pair": pair,

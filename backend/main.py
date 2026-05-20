@@ -14,7 +14,28 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analyzer import analyzer, CustomTA
 
-price_history = []
+price_history_1m = []
+price_history_5m = []
+last_tracked_price = 77500.0
+
+def get_live_price_from_api():
+    global last_tracked_price
+    try:
+        response = requests.get("https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USDT", timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        price = data['USDT']
+        last_tracked_price = price
+        return price
+    except:
+        try:
+            exchange = ccxt.binance()
+            ticker = exchange.fetch_ticker('BTC/USDT')
+            price = ticker['last']
+            last_tracked_price = price
+            return price
+        except:
+            return last_tracked_price
 
 def calculate_rsi(prices, period=14):
     if len(prices) < period + 1:
@@ -125,9 +146,9 @@ async def get_signal(
         try:
             result = analyzer.analyze_pair(pair, cleaned_timeframe)
         except Exception as exchange_error:
-            base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+            current_price = get_live_price_from_api()
             price_variation = random.uniform(-200, 200)
-            mock_price = base_price + price_variation
+            mock_price = current_price + price_variation
             signals = ["BUY", "SELL", "NEUTRAL"]
             mock_signal = random.choice(signals)
             mock_accuracy = random.randint(65, 95)
@@ -140,9 +161,9 @@ async def get_signal(
             }
         
         if result is None:
-            base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+            current_price = get_live_price_from_api()
             price_variation = random.uniform(-200, 200)
-            mock_price = base_price + price_variation
+            mock_price = current_price + price_variation
             signals = ["BUY", "SELL", "NEUTRAL"]
             mock_signal = random.choice(signals)
             mock_accuracy = random.randint(65, 95)
@@ -159,9 +180,9 @@ async def get_signal(
     except HTTPException:
         raise
     except Exception as e:
-        base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+        current_price = get_live_price_from_api()
         price_variation = random.uniform(-200, 200)
-        mock_price = base_price + price_variation
+        mock_price = current_price + price_variation
         signals = ["BUY", "SELL", "NEUTRAL"]
         mock_signal = random.choice(signals)
         mock_accuracy = random.randint(65, 95)
@@ -176,38 +197,37 @@ async def get_signal(
 
 @app.get("/api/live-price")
 async def get_live_price(
-    pair: str = Query("BTC/USDT", description="Trading pair (e.g., BTC/USDT, ETH/USDT)")
+    pair: str = Query("BTC/USDT", description="Trading pair (e.g., BTC/USDT, ETH/USDT)"),
+    timeframe: str = Query("1m", description="Timeframe (1m, 5m)")
 ):
-    global price_history
+    global price_history_1m, price_history_5m
     try:
         pair = pair.upper().strip()
         if '/' not in pair:
             raise HTTPException(status_code=400, detail="Invalid pair format. Use format like 'BTC/USDT'")
         
-        fetched_price = None
-        try:
-            response = requests.get("https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USDT", timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            fetched_price = data['USDT']
-        except:
-            try:
-                exchange = ccxt.binance()
-                ticker = exchange.fetch_ticker('BTC/USDT')
-                fetched_price = ticker['last']
-            except:
-                if price_history:
-                    fetched_price = price_history[-1] + random.uniform(-50, 50)
-                else:
-                    fetched_price = 77500.0
+        valid_timeframes = ['1m', '5m']
+        cleaned_timeframe = timeframe.replace("%20", "").replace(" ", "").lower()
         
-        price_history.append(fetched_price)
-        if len(price_history) > 50:
-            price_history.pop(0)
+        if cleaned_timeframe not in valid_timeframes:
+            raise HTTPException(status_code=400, detail=f"Invalid timeframe. Must be one of: {', '.join(valid_timeframes)}")
         
-        rsi = calculate_rsi(price_history)
+        fetched_price = get_live_price_from_api()
+        
+        if cleaned_timeframe == '1m':
+            price_history_1m.append(fetched_price)
+            if len(price_history_1m) > 50:
+                price_history_1m.pop(0)
+            current_history = price_history_1m
+        else:
+            price_history_5m.append(fetched_price)
+            if len(price_history_5m) > 50:
+                price_history_5m.pop(0)
+            current_history = price_history_5m
+        
+        rsi = calculate_rsi(current_history if current_history else [fetched_price] * 15)
         volume_high = analyze_volume([random.uniform(1000000, 5000000) for _ in range(30)])
-        market_structure = analyze_market_structure(price_history)
+        market_structure = analyze_market_structure(current_history if current_history else [fetched_price] * 5)
         
         score = 0
         if rsi < 30 or rsi > 70:
@@ -242,9 +262,9 @@ async def get_price(
                 detail="Invalid pair format. Use format like 'BTC/USDT'"
             )
         
-        base_price = 65420.50
+        current_price = get_live_price_from_api()
         price_variation = random.uniform(-50, 50)
-        mock_price = base_price + price_variation
+        mock_price = current_price + price_variation
         
         return {
             "pair": pair,
@@ -254,9 +274,10 @@ async def get_price(
     except HTTPException:
         raise
     except Exception:
+        current_price = get_live_price_from_api()
         return {
             "pair": "BTC/USDT",
-            "price": 65420.50
+            "price": round(current_price, 2)
         }
 
 
@@ -288,9 +309,9 @@ async def get_multi_signals(
                 if result:
                     results.append(result)
                 else:
-                    base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+                    current_price = get_live_price_from_api()
                     price_variation = random.uniform(-200, 200)
-                    mock_price = base_price + price_variation
+                    mock_price = current_price + price_variation
                     signals = ["BUY", "SELL", "NEUTRAL"]
                     mock_signal = random.choice(signals)
                     mock_accuracy = random.randint(65, 95)
@@ -302,9 +323,9 @@ async def get_multi_signals(
                         "pair": pair
                     })
             except Exception as e:
-                base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+                current_price = get_live_price_from_api()
                 price_variation = random.uniform(-200, 200)
-                mock_price = base_price + price_variation
+                mock_price = current_price + price_variation
                 signals = ["BUY", "SELL", "NEUTRAL"]
                 mock_signal = random.choice(signals)
                 mock_accuracy = random.randint(65, 95)
@@ -346,23 +367,15 @@ async def predict_candles(
         if timeframe not in valid_timeframes:
             raise HTTPException(status_code=400, detail=f"Invalid timeframe. Must be one of: {', '.join(valid_timeframes)}")
         
-        base_price = 65000.0 if "BTC" in pair else 3000.0 if "ETH" in pair else 100.0
+        current_price = get_live_price_from_api()
         
-        try:
-            response = requests.get("https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USDT", timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            current_price = data['USDT']
-        except:
-            try:
-                exchange = ccxt.binance()
-                ticker = exchange.fetch_ticker('BTC/USDT')
-                current_price = ticker['last']
-            except:
-                current_price = base_price + random.uniform(-200, 200)
+        if timeframe == '1m':
+            current_history = price_history_1m
+        else:
+            current_history = price_history_5m
         
-        rsi = calculate_rsi(price_history if price_history else [current_price] * 15)
-        market_structure = analyze_market_structure(price_history if price_history else [current_price] * 5)
+        rsi = calculate_rsi(current_history if current_history else [current_price] * 15)
+        market_structure = analyze_market_structure(current_history if current_history else [current_price] * 5)
         
         bullish_score = 0
         bearish_score = 0
@@ -381,10 +394,10 @@ async def predict_candles(
         elif market_structure == "BEARISH":
             bearish_score += 3
         
-        if price_history and len(price_history) >= 3:
-            if price_history[-1] > price_history[-2] > price_history[-3]:
+        if current_history and len(current_history) >= 3:
+            if current_history[-1] > current_history[-2] > current_history[-3]:
                 bullish_score += 2
-            elif price_history[-1] < price_history[-2] < price_history[-3]:
+            elif current_history[-1] < current_history[-2] < current_history[-3]:
                 bearish_score += 2
         
         macd_signal = random.choice([-1, 0, 1])
