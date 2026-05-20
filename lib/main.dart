@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:intl/intl.dart';
 
 void main() {
   runApp(const CryptoSignalApp());
@@ -115,9 +113,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       print("Network Error: $e");
       setState(() {
         previousPrice = currentPrice;
-        if (currentPrice == 0.0) {
-          currentPrice = 77500.0;
-        }
         liveScore = 0;
         rsi = 50.0;
         marketStructure = "NEUTRAL";
@@ -580,425 +575,235 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
-                Container(
-                  height: 280,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F111A),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF00FF66).withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
+                SingleChildScrollView(
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "LIVE CHART",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white38,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F111A),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: getSignalColor().withOpacity(0.15),
+                            width: 1.5,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00FF66).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF00FF66),
-                                    shape: BoxShape.circle,
-                                  ),
+                        ),
+                        child: Column(
+                          children: [
+                            if (price > 0 && !isAnalyzing)
+                              Text(
+                                "Execution Price: \$${price.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white38,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  selectedTimeframe,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF00FF66),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: candleData.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  "Loading chart data...",
-                                  style: TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 12,
-                                  ),
+                              ),
+                            const SizedBox(height: 6),
+                            if (isAnalyzing)
+                              const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.cyanAccent,
                                 ),
                               )
-                            : SfCartesianChart(
-                                primaryXAxis: DateTimeAxis(
-                                  isVisible: true,
-                                  intervalType: DateTimeIntervalType.minutes,
-                                  dateFormat: DateFormat.Hm(),
-                                  labelStyle: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 10,
-                                  ),
-                                  axisLine: const AxisLine(
-                                    color: Colors.white24,
-                                    width: 1,
-                                  ),
-                                  majorGridLines: const MajorGridLines(
-                                    color: Colors.white10,
-                                    width: 0.5,
-                                  ),
+                            else
+                              Text(
+                                signal,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w900,
+                                  color: getSignalColor(),
+                                  letterSpacing: 0.5,
                                 ),
-                                primaryYAxis: NumericAxis(
-                                  isVisible: true,
-                                  labelFormat: '\${value}',
-                                  labelStyle: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 10,
-                                  ),
-                                  axisLine: const AxisLine(
-                                    color: Colors.white24,
-                                    width: 1,
-                                  ),
-                                  majorGridLines: const MajorGridLines(
-                                    color: Colors.white10,
-                                    width: 0.5,
-                                  ),
-                                ),
-                                plotAreaBorderWidth: 0,
-                                tooltipBehavior: TooltipBehavior(
-                                  enable: true,
-                                  color: const Color(0xFF0F111A),
-                                  textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                series: <CandleSeries<CandleData, DateTime>>[
-                                  CandleSeries<CandleData, DateTime>(
-                                    name: 'Historical',
-                                    dataSource: candleData,
-                                    xValueMapper: (CandleData data, _) =>
-                                        data.time,
-                                    lowValueMapper: (CandleData data, _) =>
-                                        data.low,
-                                    highValueMapper: (CandleData data, _) =>
-                                        data.high,
-                                    openValueMapper: (CandleData data, _) =>
-                                        data.open,
-                                    closeValueMapper: (CandleData data, _) =>
-                                        data.close,
-                                    borderWidth: 2,
-                                    enableSolidCandles: true,
-                                    spacing: 0.1,
-                                  ),
-                                  CandleSeries<CandleData, DateTime>(
-                                    name: 'Predicted',
-                                    dataSource: predictedCandleData,
-                                    xValueMapper: (CandleData data, _) =>
-                                        data.time,
-                                    lowValueMapper: (CandleData data, _) =>
-                                        data.low,
-                                    highValueMapper: (CandleData data, _) =>
-                                        data.high,
-                                    openValueMapper: (CandleData data, _) =>
-                                        data.open,
-                                    closeValueMapper: (CandleData data, _) =>
-                                        data.close,
-                                    borderWidth: 2,
-                                    enableSolidCandles: true,
-                                    spacing: 0.1,
-                                  ),
-                                ],
                               ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00FF66),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            "Historical",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.white54,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00FF66).withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(2),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            "Predicted (5 Candles)",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.white54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F111A),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: getSignalColor().withOpacity(0.15),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        if (price > 0 && !isAnalyzing)
-                          Text(
-                            "Execution Price: \$${price.toStringAsFixed(2)}",
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: Colors.white38,
-                            ),
-                          ),
-                        const SizedBox(height: 6),
-                        if (isAnalyzing)
-                          const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.cyanAccent,
-                            ),
-                          )
-                        else
-                          Text(
-                            signal,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                              color: getSignalColor(),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Column(
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                const Text(
-                                  "EXPIRY",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white38,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Column(
+                                  children: [
+                                    const Text(
+                                      "EXPIRY",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white38,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      duration,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: getSignalColor(),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  duration,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: getSignalColor(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                const Text(
-                                  "PROBABILITY",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white38,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  accuracy,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.amberAccent,
-                                  ),
+                                Column(
+                                  children: [
+                                    const Text(
+                                      "PROBABILITY",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white38,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      accuracy,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amberAccent,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                GestureDetector(
-                  onTap: isAnalyzing ? null : triggerBotAnalysis,
-                  child: Container(
-                    height: 55,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isAnalyzing
-                            ? [Colors.grey, Colors.blueGrey]
-                            : [
-                                const Color(0xFF00FF66),
-                                const Color(0xFF00B0FF),
-                              ],
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: Text(
-                        isAnalyzing
-                            ? "CALCULATING EXPIRY MATRIX..."
-                            : "🔥 GIVE ME $selectedExpiry SIGNAL",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.history_toggle_off_rounded,
-                      color: Colors.white38,
-                      size: 16,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      "EXPIRED SIGNALS LOG (REAL-TIME)",
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white38,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: historyLogs.isEmpty
-                      ? Container(
+                      const SizedBox(height: 14),
+                      GestureDetector(
+                        onTap: isAnalyzing ? null : triggerBotAnalysis,
+                        child: Container(
+                          height: 55,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F111A).withOpacity(0.5),
+                            gradient: LinearGradient(
+                              colors: isAnalyzing
+                                  ? [Colors.grey, Colors.blueGrey]
+                                  : [
+                                      const Color(0xFF00FF66),
+                                      const Color(0xFF00B0FF),
+                                    ],
+                            ),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              "No expired positions yet.",
-                              style: TextStyle(
-                                color: Colors.white24,
-                                fontSize: 13,
+                              isAnalyzing
+                                  ? "CALCULATING EXPIRY MATRIX..."
+                                  : "🔥 GIVE ME $selectedExpiry SIGNAL",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: historyLogs.length,
-                          itemBuilder: (context, index) {
-                            final log = historyLogs[index];
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F111A),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.history_toggle_off_rounded,
+                            color: Colors.white38,
+                            size: 16,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            "EXPIRED SIGNALS LOG (REAL-TIME)",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white38,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 300,
+                        child: historyLogs.isEmpty
+                            ? Container(
+                                decoration: BoxDecoration(
                                   color: const Color(
-                                    0xFF00FF66,
-                                  ).withOpacity(0.1),
+                                    0xFF0F111A,
+                                  ).withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        log['type'],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: log['type'].contains("UP")
-                                              ? const Color(0xFF00FF66)
-                                              : const Color(0xFFFF0055),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        "(${log['expiry']})",
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.white38,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    "Time: ${log['time']} | Strike: ${log['rate']}",
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white54,
+                                child: const Center(
+                                  child: Text(
+                                    "No expired positions yet.",
+                                    style: TextStyle(
+                                      color: Colors.white24,
+                                      fontSize: 13,
                                     ),
                                   ),
-                                ],
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: historyLogs.length,
+                                itemBuilder: (context, index) {
+                                  final log = historyLogs[index];
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                      horizontal: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0F111A),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF00FF66,
+                                        ).withOpacity(0.1),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              log['type'],
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color:
+                                                    log['type'].contains("UP")
+                                                    ? const Color(0xFF00FF66)
+                                                    : const Color(0xFFFF0055),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              "(${log['expiry']})",
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.white38,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          "Time: ${log['time']} | Strike: ${log['rate']}",
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
