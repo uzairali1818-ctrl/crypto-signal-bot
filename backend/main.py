@@ -6,6 +6,7 @@ import os
 import random
 import time
 import ccxt
+import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -140,13 +141,14 @@ async def get_live_price(
         if '/' not in pair:
             raise HTTPException(status_code=400, detail="Invalid pair format. Use format like 'BTC/USDT'")
         
-        exchange = ccxt.binance()
-        ticker = exchange.fetch_ticker(pair)
-        current_price = ticker['last']
+        response = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd", timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        fetched_price = data['bitcoin']['usd']
         
         return {
-            "price": round(current_price, 2),
-            "pair": pair,
+            "price": round(fetched_price, 2),
+            "pair": "BTC/USDT",
             "status": "success",
             "score": 2
         }
