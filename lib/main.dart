@@ -40,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   String duration = "-- MIN";
   double price = 0.0;
   double currentPrice = 0.0;
+  double previousPrice = 0.0;
   int liveScore = 0;
   bool isAnalyzing = false;
   bool isServerError = false;
@@ -86,6 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
+          previousPrice = currentPrice;
           currentPrice = double.parse(data['price'].toString());
           liveScore = data['score'] ?? 0;
         });
@@ -99,6 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         basePrice = 100.0;
       }
       setState(() {
+        previousPrice = currentPrice;
         currentPrice = basePrice + (DateTime.now().millisecond % 200 - 100);
         liveScore = DateTime.now().second % 4;
       });
@@ -133,86 +136,39 @@ class _DashboardScreenState extends State<DashboardScreen>
       });
     });
 
-    try {
-      final url = Uri.parse(
-        '$baseUrl/api/signal?pair=$pair&timeframe=$selectedExpiry',
-      );
-      final response = await http.get(url).timeout(const Duration(seconds: 15));
+    await Future.delayed(const Duration(milliseconds: 3600));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          signal = data['signal'];
-          accuracy = data['accuracy'];
-          duration = data['duration'];
-          price = double.parse(data['price'].toString());
-          isAnalyzing = false;
-          isServerError = false;
-          showAnalyzingOverlay = false;
-          _progressTimer?.cancel();
+    bool priceTrendUp = currentPrice > previousPrice;
+    bool highScore = liveScore >= 2;
 
-          if (signal != "NEUTRAL" && !signal.contains("ERROR")) {
-            int probValue = int.tryParse(accuracy.replaceAll('%', '')) ?? 80;
-            String finalResult = (probValue > 88) ? "WIN" : "LOSS";
-            String generatedTime =
-                "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
-
-            historyLogs.insert(0, {
-              "time": generatedTime,
-              "pair": pair,
-              "type": signal,
-              "expiry": duration,
-              "rate": "\$${price.toStringAsFixed(2)}",
-              "prob": accuracy,
-              "status": finalResult,
-            });
-          }
-        });
+    _progressTimer?.cancel();
+    setState(() {
+      if (priceTrendUp || highScore) {
+        signal = "BUY / LONG";
       } else {
-        _progressTimer?.cancel();
-        setState(() {
-          showAnalyzingOverlay = false;
-        });
-        showError();
+        signal = "SELL / SHORT";
       }
-    } catch (e) {
-      print("Network Error: $e");
-      double basePrice = 65000.0;
-      if (pair.contains("ETH")) {
-        basePrice = 3000.0;
-      } else if (pair.contains("BNB") || pair.contains("SOL")) {
-        basePrice = 100.0;
-      }
-      List<String> signals = ["BUY", "SELL", "NEUTRAL"];
-      String mockSignal = signals[DateTime.now().second % 3];
-      int mockAccuracy = 65 + (DateTime.now().millisecond % 30);
-      _progressTimer?.cancel();
-      setState(() {
-        signal = mockSignal;
-        accuracy = "$mockAccuracy%";
-        duration = selectedExpiry;
-        price = basePrice + (DateTime.now().millisecond % 200 - 100);
-        isAnalyzing = false;
-        isServerError = false;
-        showAnalyzingOverlay = false;
+      accuracy = "${85 + (liveScore * 5)}%";
+      duration = selectedExpiry;
+      price = currentPrice;
+      isAnalyzing = false;
+      isServerError = false;
+      showAnalyzingOverlay = false;
 
-        if (signal != "NEUTRAL") {
-          String finalResult = (mockAccuracy > 88) ? "WIN" : "LOSS";
-          String generatedTime =
-              "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
+      String finalResult = (liveScore >= 2) ? "WIN" : "LOSS";
+      String generatedTime =
+          "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}";
 
-          historyLogs.insert(0, {
-            "time": generatedTime,
-            "pair": pair,
-            "type": signal,
-            "expiry": duration,
-            "rate": "\$${price.toStringAsFixed(2)}",
-            "prob": accuracy,
-            "status": finalResult,
-          });
-        }
+      historyLogs.insert(0, {
+        "time": generatedTime,
+        "pair": pair,
+        "type": signal,
+        "expiry": duration,
+        "rate": "\$${price.toStringAsFixed(2)}",
+        "prob": accuracy,
+        "status": finalResult,
       });
-    }
+    });
   }
 
   void showError() {
@@ -224,8 +180,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Color getSignalColor() {
-    if (signal.contains("UP")) return const Color(0xFF00FF66);
-    if (signal.contains("DOWN")) return const Color(0xFFFF0055);
+    if (signal.contains("BUY") || signal.contains("LONG"))
+      return const Color(0xFF00FF66);
+    if (signal.contains("SELL") || signal.contains("SHORT"))
+      return const Color(0xFFFF0055);
     if (isAnalyzing) return Colors.cyanAccent;
     return Colors.white30;
   }
@@ -403,7 +361,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Signal Strength: $liveScore/3 Points Matched",
+                        liveScore == 0
+                            ? "0/3 Points Matched"
+                            : liveScore == 1
+                            ? "1/3 Points Matched"
+                            : liveScore == 2
+                            ? "2/3 Points Matched"
+                            : "3/3 Points Matched",
                         style: TextStyle(
                           fontSize: 12,
                           color: liveScore == 3

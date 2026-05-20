@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import sys
@@ -146,12 +146,13 @@ async def get_live_price(
         data = response.json()
         fetched_price = data['bitcoin']['usd']
         
-        return {
-            "price": round(fetched_price, 2),
-            "pair": "BTC/USDT",
-            "status": "success",
-            "score": 2
-        }
+        return Response(
+            content=f'{{"price": {round(fetched_price, 2)}, "pair": "BTC/USDT", "status": "success", "score": 2}}',
+            media_type="application/json",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate"
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:
