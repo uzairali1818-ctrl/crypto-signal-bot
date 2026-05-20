@@ -685,6 +685,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     width: 0.5,
                                   ),
                                 ),
+                                plotAreaBorderWidth: 0,
                                 tooltipBehavior: TooltipBehavior(
                                   enable: true,
                                   color: const Color(0xFF0F111A),
@@ -707,7 +708,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         data.open,
                                     closeValueMapper: (CandleData data, _) =>
                                         data.close,
-                                    borderWidth: 1,
+                                    borderWidth: 2,
+                                    enableSolidCandles: true,
+                                    spacing: 0.1,
                                   ),
                                   CandleSeries<CandleData, DateTime>(
                                     name: 'Predicted',
@@ -722,8 +725,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                         data.open,
                                     closeValueMapper: (CandleData data, _) =>
                                         data.close,
-                                    borderWidth: 1,
+                                    borderWidth: 2,
                                     enableSolidCandles: true,
+                                    spacing: 0.1,
                                   ),
                                 ],
                               ),
@@ -775,96 +779,98 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 20,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F111A),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: getSignalColor().withOpacity(0.15),
-                      width: 1.5,
+                SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 16,
                     ),
-                  ),
-                  child: Column(
-                    children: [
-                      if (price > 0 && !isAnalyzing)
-                        Text(
-                          "Execution Price: \$${price.toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Colors.white38,
-                          ),
-                        ),
-                      const SizedBox(height: 6),
-                      if (isAnalyzing)
-                        const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.cyanAccent,
-                          ),
-                        )
-                      else
-                        Text(
-                          signal,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w900,
-                            color: getSignalColor(),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              const Text(
-                                "EXPIRY",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white38,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                duration,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: getSignalColor(),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              const Text(
-                                "PROBABILITY",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white38,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                accuracy,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amberAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F111A),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: getSignalColor().withOpacity(0.15),
+                        width: 1.5,
                       ),
-                    ],
+                    ),
+                    child: Column(
+                      children: [
+                        if (price > 0 && !isAnalyzing)
+                          Text(
+                            "Execution Price: \$${price.toStringAsFixed(2)}",
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.white38,
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                        if (isAnalyzing)
+                          const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.cyanAccent,
+                            ),
+                          )
+                        else
+                          Text(
+                            signal,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              color: getSignalColor(),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                const Text(
+                                  "EXPIRY",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white38,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  duration,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: getSignalColor(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                const Text(
+                                  "PROBABILITY",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white38,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  accuracy,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amberAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
