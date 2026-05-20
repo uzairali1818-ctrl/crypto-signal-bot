@@ -389,424 +389,452 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(14.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F111A),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF00FF66).withOpacity(0.2),
-                      width: 1,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 14.0,
+                      right: 14.0,
+                      top: 14.0,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 14.0,
                     ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "LIVE PRICE",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white38,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          const Text(
-                            "\$",
-                            style: TextStyle(
-                              fontSize: 24,
-                              color: Color(0xFF00FF66),
-                              fontWeight: FontWeight.bold,
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 20,
                           ),
-                          Text(
-                            currentPrice > 0
-                                ? currentPrice.toStringAsFixed(2)
-                                : "--",
-                            style: const TextStyle(
-                              fontSize: 36,
-                              color: Color(0xFF00FF66),
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        pair,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white54,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        liveScore == 0
-                            ? "0/3 Points Matched"
-                            : liveScore == 1
-                            ? "1/3 Points Matched"
-                            : liveScore == 2
-                            ? "2/3 Points Matched"
-                            : "3/3 Points Matched",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: liveScore == 3
-                              ? const Color(0xFF00FF66)
-                              : Colors.white54,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F111A),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "ASSET: $pair",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedTimeframe = "1 MIN";
-                                candleData.clear();
-                                predictedCandleData.clear();
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selectedTimeframe == "1 MIN"
-                                    ? const Color(0xFF00FF66).withOpacity(0.15)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: selectedTimeframe == "1 MIN"
-                                      ? const Color(0xFF00FF66)
-                                      : Colors.transparent,
-                                ),
-                              ),
-                              child: Text(
-                                "1 MIN",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: selectedTimeframe == "1 MIN"
-                                      ? const Color(0xFF00FF66)
-                                      : Colors.white38,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedTimeframe = "5 MIN";
-                                candleData.clear();
-                                predictedCandleData.clear();
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selectedTimeframe == "5 MIN"
-                                    ? const Color(0xFF00FF66).withOpacity(0.15)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: selectedTimeframe == "5 MIN"
-                                      ? const Color(0xFF00FF66)
-                                      : Colors.transparent,
-                                ),
-                              ),
-                              child: Text(
-                                "5 MIN",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: selectedTimeframe == "5 MIN"
-                                      ? const Color(0xFF00FF66)
-                                      : Colors.white38,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 20,
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F111A),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: getSignalColor().withOpacity(0.15),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            if (price > 0 && !isAnalyzing)
-                              Text(
-                                "Execution Price: \$${price.toStringAsFixed(2)}",
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white38,
-                                ),
-                              ),
-                            const SizedBox(height: 6),
-                            if (isAnalyzing)
-                              const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.cyanAccent,
-                                ),
-                              )
-                            else
-                              Text(
-                                signal,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  color: getSignalColor(),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Column(
-                                  children: [
-                                    const Text(
-                                      "EXPIRY",
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white38,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      duration,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: getSignalColor(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  children: [
-                                    const Text(
-                                      "PROBABILITY",
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white38,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      accuracy,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.amberAccent,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      GestureDetector(
-                        onTap: isAnalyzing ? null : triggerBotAnalysis,
-                        child: Container(
-                          height: 55,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isAnalyzing
-                                  ? [Colors.grey, Colors.blueGrey]
-                                  : [
-                                      const Color(0xFF00FF66),
-                                      const Color(0xFF00B0FF),
-                                    ],
+                            color: const Color(0xFF0F111A),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF00FF66).withOpacity(0.2),
+                              width: 1,
                             ),
-                            borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Center(
-                            child: Text(
-                              isAnalyzing
-                                  ? "CALCULATING EXPIRY MATRIX..."
-                                  : "🔥 GIVE ME $selectedExpiry SIGNAL",
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.black,
-                                letterSpacing: 0.5,
+                          child: Column(
+                            children: [
+                              const Text(
+                                "LIVE PRICE",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white38,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  const Text(
+                                    "\$",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      color: Color(0xFF00FF66),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    currentPrice > 0
+                                        ? currentPrice.toStringAsFixed(2)
+                                        : "--",
+                                    style: const TextStyle(
+                                      fontSize: 36,
+                                      color: Color(0xFF00FF66),
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                pair,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white54,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                liveScore == 0
+                                    ? "0/3 Points Matched"
+                                    : liveScore == 1
+                                    ? "1/3 Points Matched"
+                                    : liveScore == 2
+                                    ? "2/3 Points Matched"
+                                    : "3/3 Points Matched",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: liveScore == 3
+                                      ? const Color(0xFF00FF66)
+                                      : Colors.white54,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.history_toggle_off_rounded,
-                            color: Colors.white38,
-                            size: 16,
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 12,
                           ),
-                          SizedBox(width: 6),
-                          Text(
-                            "EXPIRED SIGNALS LOG (REAL-TIME)",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white38,
-                              letterSpacing: 0.5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F111A),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "ASSET: $pair",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedTimeframe = "1 MIN";
+                                        candleData.clear();
+                                        predictedCandleData.clear();
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: selectedTimeframe == "1 MIN"
+                                            ? const Color(
+                                                0xFF00FF66,
+                                              ).withOpacity(0.15)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: selectedTimeframe == "1 MIN"
+                                              ? const Color(0xFF00FF66)
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "1 MIN",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: selectedTimeframe == "1 MIN"
+                                              ? const Color(0xFF00FF66)
+                                              : Colors.white38,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedTimeframe = "5 MIN";
+                                        candleData.clear();
+                                        predictedCandleData.clear();
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: selectedTimeframe == "5 MIN"
+                                            ? const Color(
+                                                0xFF00FF66,
+                                              ).withOpacity(0.15)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: selectedTimeframe == "5 MIN"
+                                              ? const Color(0xFF00FF66)
+                                              : Colors.transparent,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "5 MIN",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: selectedTimeframe == "5 MIN"
+                                              ? const Color(0xFF00FF66)
+                                              : Colors.white38,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 20,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F111A),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: getSignalColor().withOpacity(0.15),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  if (price > 0 && !isAnalyzing)
+                                    Text(
+                                      "Execution Price: \$${price.toStringAsFixed(2)}",
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.white38,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 6),
+                                  if (isAnalyzing)
+                                    const CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.cyanAccent,
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      signal,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 34,
+                                        fontWeight: FontWeight.w900,
+                                        color: getSignalColor(),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          const Text(
+                                            "EXPIRY",
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white38,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            duration,
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: getSignalColor(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          const Text(
+                                            "PROBABILITY",
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white38,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            accuracy,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.amberAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 300,
-                        child: historyLogs.isEmpty
-                            ? Container(
+                            const SizedBox(height: 14),
+                            GestureDetector(
+                              onTap: isAnalyzing ? null : triggerBotAnalysis,
+                              child: Container(
+                                height: 55,
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF0F111A,
-                                  ).withOpacity(0.5),
+                                  gradient: LinearGradient(
+                                    colors: isAnalyzing
+                                        ? [Colors.grey, Colors.blueGrey]
+                                        : [
+                                            const Color(0xFF00FF66),
+                                            const Color(0xFF00B0FF),
+                                          ],
+                                  ),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    "No expired positions yet.",
-                                    style: TextStyle(
-                                      color: Colors.white24,
-                                      fontSize: 13,
+                                    isAnalyzing
+                                        ? "CALCULATING EXPIRY MATRIX..."
+                                        : "🔥 GIVE ME $selectedExpiry SIGNAL",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.black,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ),
-                              )
-                            : ListView.builder(
-                                itemCount: historyLogs.length,
-                                itemBuilder: (context, index) {
-                                  final log = historyLogs[index];
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                      horizontal: 14,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0F111A),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.history_toggle_off_rounded,
+                                  color: Colors.white38,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  "EXPIRED SIGNALS LOG (REAL-TIME)",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white38,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 300,
+                              child: historyLogs.isEmpty
+                                  ? Container(
+                                      decoration: BoxDecoration(
                                         color: const Color(
-                                          0xFF00FF66,
-                                        ).withOpacity(0.1),
+                                          0xFF0F111A,
+                                        ).withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              log['type'],
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                                color:
-                                                    log['type'].contains("UP")
-                                                    ? const Color(0xFF00FF66)
-                                                    : const Color(0xFFFF0055),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "(${log['expiry']})",
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.white38,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          "Time: ${log['time']} | Strike: ${log['rate']}",
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.white54,
+                                      child: const Center(
+                                        child: Text(
+                                          "No expired positions yet.",
+                                          style: TextStyle(
+                                            color: Colors.white24,
+                                            fontSize: 13,
                                           ),
                                         ),
-                                      ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: historyLogs.length,
+                                      itemBuilder: (context, index) {
+                                        final log = historyLogs[index];
+                                        return Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                            horizontal: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0F111A),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(
+                                                0xFF00FF66,
+                                              ).withOpacity(0.1),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    log['type'],
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                      color:
+                                                          log['type'].contains(
+                                                            "UP",
+                                                          )
+                                                          ? const Color(
+                                                              0xFF00FF66,
+                                                            )
+                                                          : const Color(
+                                                              0xFFFF0055,
+                                                            ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    "(${log['expiry']})",
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.white38,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                "Time: ${log['time']} | Strike: ${log['rate']}",
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.white54,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
           if (showAnalyzingOverlay) _buildAnalyzingOverlay(),
         ],
