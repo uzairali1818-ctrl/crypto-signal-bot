@@ -98,16 +98,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     } catch (e) {
       print("Network Error: $e");
-      double basePrice = 65000.0;
-      if (pair.contains("ETH")) {
-        basePrice = 3000.0;
-      } else if (pair.contains("BNB") || pair.contains("SOL")) {
-        basePrice = 100.0;
-      }
       setState(() {
         previousPrice = currentPrice;
-        currentPrice = basePrice + (DateTime.now().millisecond % 200 - 100);
-        liveScore = DateTime.now().second % 4;
+        if (currentPrice == 0.0) {
+          currentPrice = 77500.0;
+        }
+        liveScore = 0;
         rsi = 50.0;
         marketStructure = "NEUTRAL";
       });
